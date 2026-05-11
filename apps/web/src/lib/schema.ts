@@ -28,6 +28,7 @@ Rules:
 - Always return a SELECT query.
 - If the user asks for approvals, use status LIKE 'Certified%'.
 - If the user asks for denials, use status = 'Denied'.
+- If the user says "starting with X", use ILIKE 'X%' on the relevant text column.
 - For "top" requests, use ORDER BY aggregate DESC and LIMIT 10 unless user states a different limit.
 `
 }

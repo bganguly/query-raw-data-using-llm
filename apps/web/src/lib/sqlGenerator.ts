@@ -7,15 +7,26 @@ type SqlGenerationInput = {
 
 const OPENAI_CHAT_COMPLETIONS_URL = 'https://api.openai.com/v1/chat/completions'
 
+function parseStartsWithLetter(queryLower: string) {
+  const match = queryLower.match(/starting\s+with\s+([a-z])/i)
+  if (!match) {
+    return null
+  }
+
+  return match[1].toUpperCase()
+}
+
 function deterministicFallbackSql(query: string) {
   const q = query.toLowerCase()
   const yearMatch = q.match(/(20\d{2})/)
   const yearFilter = yearMatch ? ` AND year = ${yearMatch[1]}` : ''
+  const startsWithLetter = parseStartsWithLetter(q)
+  const employerPrefixFilter = startsWithLetter ? ` AND employer ILIKE '${startsWithLetter}%'` : ''
 
   if (q.includes('top') && q.includes('employer') && q.includes('approval')) {
     return `SELECT employer, COUNT(*) AS approvals
 FROM h1b_raw
-WHERE status LIKE 'Certified%'${yearFilter}
+WHERE status LIKE 'Certified%'${yearFilter}${employerPrefixFilter}
 GROUP BY employer
 ORDER BY approvals DESC
 LIMIT 10`

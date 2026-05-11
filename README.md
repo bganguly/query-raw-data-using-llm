@@ -52,7 +52,7 @@ This will:
 - send parquet files to s3,
 - start the dev server.
 
-Open the local URL shown in terminal (usually `http://localhost:5173`).
+Open the local URL shown in terminal (usually [http://localhost:5173](http://localhost:5173)).
 
 ## Infra From Scratch (S3 Parquet)
 
