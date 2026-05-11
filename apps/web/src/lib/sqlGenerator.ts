@@ -15,7 +15,7 @@ function deterministicFallbackSql(query: string) {
   if (q.includes('top') && q.includes('employer') && q.includes('approval')) {
     return `SELECT employer, COUNT(*) AS approvals
 FROM h1b_raw
-WHERE status = 'Certified'${yearFilter}
+WHERE status LIKE 'Certified%'${yearFilter}
 GROUP BY employer
 ORDER BY approvals DESC
 LIMIT 10`
@@ -24,7 +24,7 @@ LIMIT 10`
   if (q.includes('approval') && q.includes('country')) {
     return `SELECT country, COUNT(*) AS approvals
 FROM h1b_raw
-WHERE status = 'Certified'${yearFilter}
+WHERE status LIKE 'Certified%'${yearFilter}
 GROUP BY country
 ORDER BY approvals DESC`
   }
@@ -32,7 +32,7 @@ ORDER BY approvals DESC`
   if (q.includes('approval rate') && q.includes('year')) {
     return `SELECT year,
   ROUND(
-    100.0 * SUM(CASE WHEN status = 'Certified' THEN 1 ELSE 0 END) / COUNT(*),
+    100.0 * SUM(CASE WHEN status LIKE 'Certified%' THEN 1 ELSE 0 END) / COUNT(*),
     2
   ) AS approval_rate
 FROM h1b_raw
@@ -43,7 +43,7 @@ ORDER BY year`
   if (q.includes('average') && q.includes('wage')) {
     return `SELECT job_title, ROUND(AVG(wage), 2) AS avg_wage
 FROM h1b_raw
-WHERE wage IS NOT NULL${q.includes('certified') ? " AND status = 'Certified'" : ''}
+WHERE wage IS NOT NULL${q.includes('certified') ? " AND status LIKE 'Certified%'" : ''}
 GROUP BY job_title
 ORDER BY avg_wage DESC
 LIMIT 20`

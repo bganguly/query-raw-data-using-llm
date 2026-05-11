@@ -26,7 +26,7 @@ Rules:
 - Use only the listed columns.
 - Never use INSERT, UPDATE, DELETE, DROP, ALTER, CREATE.
 - Always return a SELECT query.
-- If the user asks for approvals, use status = 'Certified'.
+- If the user asks for approvals, use status LIKE 'Certified%'.
 - If the user asks for denials, use status = 'Denied'.
 - For "top" requests, use ORDER BY aggregate DESC and LIMIT 10 unless user states a different limit.
 `
