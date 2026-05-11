@@ -11,7 +11,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { DUCKDB_H1B_TABLE, duckDbEngine } from './lib/duckdb.ts'
+import { DUCKDB_H1B_TABLE, duckDbEngine } from './lib'
 import { H1B_SCHEMA, buildSqlGenerationPrompt } from './lib/schema'
 import { generateSqlFromNl } from './lib/sqlGenerator'
 import { validateGeneratedSql } from './lib/sqlSafety'
