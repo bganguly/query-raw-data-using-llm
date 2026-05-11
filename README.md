@@ -1,10 +1,5 @@
 # H1B Natural Language Query System (No Database Prototype)
 
-![Status](https://img.shields.io/badge/status-prototype-orange)
-![Frontend](https://img.shields.io/badge/frontend-react%20%2B%20typescript-0b7285)
-![Engine](https://img.shields.io/badge/query%20engine-duckdb--wasm-c2410c)
-![Build](https://img.shields.io/badge/build-passing-2b8a3e)
-
 Natural language -> SQL (LLM) -> DuckDB-WASM -> table/chart visualization in the browser.
 
 ## Quick Copy
@@ -54,6 +49,7 @@ This will:
 - install required Python and npm dependencies,
 - fetch official DOL/USCIS sources,
 - build parquet files,
+- send parquet files to s3,
 - start the dev server.
 
 Open the local URL shown in terminal (usually `http://localhost:5173`).
