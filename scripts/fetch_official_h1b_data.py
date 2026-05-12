@@ -64,7 +64,8 @@ def parse_year(row: dict, fallback_year: int) -> int:
 
 
 def resolve_employer_name(row: dict, status: str) -> str:
-    employer = as_text(row.get("EMPLOYER_NAME") or row.get("EMPLOYER_NAME_DECLARED"))
+    employer = as_text(row.get("EMPLOYER_NAME")
+                       or row.get("EMPLOYER_NAME_DECLARED"))
 
     if employer:
         return employer
@@ -137,6 +138,9 @@ def convert_dol_xlsx_to_normalized_csv(
     count = 0
 
     for row_values in rows_iter:
+        if not any(value is not None and as_text(value) for value in row_values):
+            continue
+
         row = {headers[index]: row_values[index]
                for index in range(min(len(headers), len(row_values)))}
 
