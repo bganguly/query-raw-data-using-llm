@@ -34,5 +34,6 @@ Rules:
 - If the user says "starting with X", use ILIKE 'X%' on the relevant text column.
 - If the user asks for FY/Fiscal periods (example: FY2026 Q1), filter on fiscal_year and fiscal_quarter.
 - For "top" requests, use ORDER BY aggregate DESC and LIMIT 10 unless user states a different limit.
+- For top employers queries, exclude blank employer names (employer IS NOT NULL AND TRIM(employer) <> '').
 `
 }

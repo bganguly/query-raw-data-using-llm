@@ -97,7 +97,8 @@ function buildTopEmployersApplicationsSql(queryLower: string) {
 
   return `SELECT employer, COUNT(*) AS applications
 FROM h1b_raw
-WHERE 1=1${yearFilter}${fiscalFilter}${employerPrefixFilter}
+WHERE employer IS NOT NULL
+  AND TRIM(employer) <> ''${yearFilter}${fiscalFilter}${employerPrefixFilter}
 GROUP BY employer
 ORDER BY applications DESC
 LIMIT ${requestedLimit}`
@@ -246,7 +247,9 @@ function deterministicFallbackSql(query: string) {
   if (q.includes('top') && q.includes('employer') && q.includes('approval')) {
     return `SELECT employer, COUNT(*) AS approvals
 FROM h1b_raw
-WHERE status LIKE 'Certified%'${yearFilter}${fiscalFilter}${employerPrefixFilter}
+WHERE status LIKE 'Certified%'
+  AND employer IS NOT NULL
+  AND TRIM(employer) <> ''${yearFilter}${fiscalFilter}${employerPrefixFilter}
 GROUP BY employer
 ORDER BY approvals DESC
 LIMIT 10`
