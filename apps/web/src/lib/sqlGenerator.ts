@@ -365,7 +365,7 @@ function deterministicFallbackSql(query: string) {
     return `SELECT employer, COUNT(*) AS approvals
 FROM h1b_raw
 WHERE status LIKE 'Certified%'
-  AND TRIM(employer) <> ''${yearFilter}${fiscalFilter}${employerPrefixFilter}
+${yearFilter}${fiscalFilter}${employerPrefixFilter}
 GROUP BY employer
 ORDER BY approvals DESC
 LIMIT 10`
