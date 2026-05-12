@@ -99,13 +99,17 @@ function isCountIntent(queryLower: string) {
 }
 
 function buildCountIntentSql(queryLower: string) {
-  const yearFilter = extractCalendarYearFilter(queryLower)
+  const fiscalPeriod = parseFiscalPeriod(queryLower)
+  const yearMatch = fiscalPeriod ? null : queryLower.match(/(20\d{2})/)
+  const yearOrFiscalFilter = yearMatch
+    ? ` AND (year = ${yearMatch[1]} OR fiscal_year = ${yearMatch[1]})`
+    : ''
   const fiscalFilter = extractFiscalFilter(queryLower)
   const employerPrefixFilter = extractEmployerPrefixFilter(queryLower)
 
   return `SELECT COUNT(*) AS total_h1b_records
 FROM h1b_raw
-WHERE 1=1${yearFilter}${fiscalFilter}${employerPrefixFilter}`
+WHERE 1=1${yearOrFiscalFilter}${fiscalFilter}${employerPrefixFilter}`
 }
 
 function buildTopEmployersApplicationsSql(queryLower: string) {
