@@ -81,6 +81,7 @@ def convert_dol_xlsx_to_normalized_csv(
     output_handle,
     write_header: bool,
     fallback_year: int,
+    fallback_quarter: int,
     max_rows: int | None,
 ) -> int:
     workbook = load_workbook(filename=source_xlsx,
@@ -96,8 +97,19 @@ def convert_dol_xlsx_to_normalized_csv(
 
     writer = csv.writer(output_handle)
     if write_header:
-        writer.writerow(["employer", "job_title", "country",
-                        "work_location", "wage", "status", "year"])
+        writer.writerow(
+            [
+                "employer",
+                "job_title",
+                "country",
+                "work_location",
+                "wage",
+                "status",
+                "year",
+                "fiscal_year",
+                "fiscal_quarter",
+            ]
+        )
 
     count = 0
 
@@ -125,8 +137,19 @@ def convert_dol_xlsx_to_normalized_csv(
         status = as_text(row.get("CASE_STATUS") or row.get("STATUS"))
         year = parse_year(row, fallback_year)
 
-        writer.writerow([employer, job_title, country,
-                        work_location, wage, status, year])
+        writer.writerow(
+            [
+                employer,
+                job_title,
+                country,
+                work_location,
+                wage,
+                status,
+                year,
+                fallback_year,
+                fallback_quarter,
+            ]
+        )
         count += 1
 
         if max_rows is not None and count >= max_rows:
@@ -195,6 +218,7 @@ def main() -> None:
                 output_handle=output_handle,
                 write_header=(index == 0),
                 fallback_year=fy,
+                fallback_quarter=quarter,
                 max_rows=row_cap,
             )
             output_written = output_written or converted > 0

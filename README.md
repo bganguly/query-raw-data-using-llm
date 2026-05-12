@@ -113,6 +113,8 @@ The query generator and SQL validator assume one table named `h1b_raw` with colu
 - wage (DOUBLE)
 - status (TEXT)
 - year (INTEGER)
+- fiscal_year (INTEGER)
+- fiscal_quarter (INTEGER)
 
 ## LLM Configuration
 

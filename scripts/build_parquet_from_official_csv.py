@@ -26,6 +26,8 @@ def build_parquet(csv_path: pathlib.Path, output_dir: pathlib.Path, max_rows: in
                 "wage": pa.float64(),
                 "status": pa.string(),
                 "year": pa.int32(),
+                "fiscal_year": pa.int32(),
+                "fiscal_quarter": pa.int32(),
             }
         ),
     )

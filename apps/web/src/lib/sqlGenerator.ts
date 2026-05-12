@@ -7,6 +7,11 @@ type SqlGenerationInput = {
 
 const OPENAI_CHAT_COMPLETIONS_URL = 'https://api.openai.com/v1/chat/completions'
 
+type FiscalPeriod = {
+  fiscalYear: number
+  fiscalQuarter?: number
+}
+
 function parseStartsWithPrefix(queryLower: string) {
   const quotedMatch = queryLower.match(/starting\s+with\s+["']([a-z0-9 _.-]+)["']/i)
   const plainMatch = queryLower.match(/starting\s+with\s+([a-z0-9_.-]+)/i)
@@ -17,6 +22,19 @@ function parseStartsWithPrefix(queryLower: string) {
   }
 
   return match[1].trim()
+}
+
+function parseFiscalPeriod(queryLower: string): FiscalPeriod | null {
+  const match = queryLower.match(/\b(?:fy|fiscal\s+year)\s*(20\d{2})(?:\s*q([1-4]))?\b/i)
+
+  if (!match) {
+    return null
+  }
+
+  const fiscalYear = Number(match[1])
+  const fiscalQuarter = match[2] ? Number(match[2]) : undefined
+
+  return { fiscalYear, fiscalQuarter }
 }
 
 function applyStartsWithEmployerConstraint(sql: string, queryLower: string) {
@@ -66,10 +84,74 @@ function normalizeEmployerEquality(sql: string) {
   })
 }
 
+function applyFiscalPeriodConstraint(sql: string, queryLower: string) {
+  const fiscal = parseFiscalPeriod(queryLower)
+
+  if (!fiscal) {
+    return sql
+  }
+
+  const { fiscalYear, fiscalQuarter } = fiscal
+  let constrainedSql = sql
+
+  const exactYearRegex = new RegExp(`\\byear\\s*=\\s*${fiscalYear}\\b`, 'i')
+  if (exactYearRegex.test(constrainedSql)) {
+    constrainedSql = constrainedSql
+      .replace(new RegExp(`\\s+AND\\s+year\\s*=\\s*${fiscalYear}\\b`, 'ig'), '')
+      .replace(new RegExp(`\\bWHERE\\s+year\\s*=\\s*${fiscalYear}\\s+AND\\s+`, 'ig'), 'WHERE ')
+      .replace(new RegExp(`\\bWHERE\\s+year\\s*=\\s*${fiscalYear}\\b`, 'ig'), '')
+  }
+
+  const fiscalYearRegex = /fiscal_year\s*=\s*\d{4}/i
+  const fiscalQuarterRegex = /fiscal_quarter\s*=\s*[1-4]/i
+
+  if (fiscalYearRegex.test(constrainedSql)) {
+    constrainedSql = constrainedSql.replace(fiscalYearRegex, `fiscal_year = ${fiscalYear}`)
+  }
+
+  if (fiscalQuarter !== undefined && fiscalQuarterRegex.test(constrainedSql)) {
+    constrainedSql = constrainedSql.replace(fiscalQuarterRegex, `fiscal_quarter = ${fiscalQuarter}`)
+  }
+
+  const missingFiscalYear = !/fiscal_year\s*=\s*\d{4}/i.test(constrainedSql)
+  const missingFiscalQuarter =
+    fiscalQuarter !== undefined && !/fiscal_quarter\s*=\s*[1-4]/i.test(constrainedSql)
+
+  if (!missingFiscalYear && !missingFiscalQuarter) {
+    return constrainedSql
+  }
+
+  const conditions = [`fiscal_year = ${fiscalYear}`]
+  if (fiscalQuarter !== undefined) {
+    conditions.push(`fiscal_quarter = ${fiscalQuarter}`)
+  }
+
+  const constraint = ` ${conditions.join(' AND ')}`
+  const boundaryRegex = /\b(group\s+by|order\s+by|limit)\b/i
+  const boundaryMatch = boundaryRegex.exec(constrainedSql)
+  const boundaryIndex = boundaryMatch?.index ?? constrainedSql.length
+  const head = constrainedSql.slice(0, boundaryIndex)
+  const tail = constrainedSql.slice(boundaryIndex)
+
+  if (/\bwhere\b/i.test(head)) {
+    return `${head} AND${constraint} ${tail}`.trim()
+  }
+
+  return `${head} WHERE${constraint} ${tail}`.trim()
+}
+
 function deterministicFallbackSql(query: string) {
   const q = query.toLowerCase()
-  const yearMatch = q.match(/(20\d{2})/)
+  const fiscalPeriod = parseFiscalPeriod(q)
+  const yearMatch = fiscalPeriod ? null : q.match(/(20\d{2})/)
   const yearFilter = yearMatch ? ` AND year = ${yearMatch[1]}` : ''
+  const fiscalFilter = fiscalPeriod
+    ? ` AND fiscal_year = ${fiscalPeriod.fiscalYear}${
+        fiscalPeriod.fiscalQuarter !== undefined
+          ? ` AND fiscal_quarter = ${fiscalPeriod.fiscalQuarter}`
+          : ''
+      }`
+    : ''
   const startsWithPrefix = parseStartsWithPrefix(q)
   const employerPrefixFilter = startsWithPrefix
     ? ` AND employer ILIKE '${startsWithPrefix.toLowerCase()}%'`
@@ -78,7 +160,7 @@ function deterministicFallbackSql(query: string) {
   if (q.includes('top') && q.includes('employer') && q.includes('approval')) {
     return `SELECT employer, COUNT(*) AS approvals
 FROM h1b_raw
-WHERE status LIKE 'Certified%'${yearFilter}${employerPrefixFilter}
+WHERE status LIKE 'Certified%'${yearFilter}${fiscalFilter}${employerPrefixFilter}
 GROUP BY employer
 ORDER BY approvals DESC
 LIMIT 10`
@@ -87,7 +169,7 @@ LIMIT 10`
   if (q.includes('approval') && q.includes('country')) {
     return `SELECT country, COUNT(*) AS approvals
 FROM h1b_raw
-WHERE status LIKE 'Certified%'${yearFilter}
+WHERE status LIKE 'Certified%'${yearFilter}${fiscalFilter}
 GROUP BY country
 ORDER BY approvals DESC`
   }
@@ -125,7 +207,10 @@ export async function generateSqlFromNl(input: SqlGenerationInput) {
 
   if (!input.apiKey) {
     const fallbackSql = deterministicFallbackSql(trimmedQuery)
-    return applyStartsWithEmployerConstraint(normalizeEmployerEquality(fallbackSql), queryLower)
+    return applyStartsWithEmployerConstraint(
+      applyFiscalPeriodConstraint(normalizeEmployerEquality(fallbackSql), queryLower),
+      queryLower,
+    )
   }
 
   const response = await fetch(OPENAI_CHAT_COMPLETIONS_URL, {
@@ -165,5 +250,8 @@ export async function generateSqlFromNl(input: SqlGenerationInput) {
   }
 
   const cleanedSql = content.replace(/```sql|```/gi, '').trim()
-  return applyStartsWithEmployerConstraint(normalizeEmployerEquality(cleanedSql), queryLower)
+  return applyStartsWithEmployerConstraint(
+    applyFiscalPeriodConstraint(normalizeEmployerEquality(cleanedSql), queryLower),
+    queryLower,
+  )
 }

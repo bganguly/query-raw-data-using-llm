@@ -6,6 +6,8 @@ export const H1B_SCHEMA = [
   { name: 'wage', type: 'DOUBLE' },
   { name: 'status', type: 'TEXT' },
   { name: 'year', type: 'INTEGER' },
+  { name: 'fiscal_year', type: 'INTEGER' },
+  { name: 'fiscal_quarter', type: 'INTEGER' },
 ] as const
 
 export function buildSqlGenerationPrompt(
@@ -29,6 +31,7 @@ Rules:
 - If the user asks for approvals, use status LIKE 'Certified%'.
 - If the user asks for denials, use status = 'Denied'.
 - If the user says "starting with X", use ILIKE 'X%' on the relevant text column.
+- If the user asks for FY/Fiscal periods (example: FY2026 Q1), filter on fiscal_year and fiscal_quarter.
 - For "top" requests, use ORDER BY aggregate DESC and LIMIT 10 unless user states a different limit.
 `
 }
