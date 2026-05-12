@@ -75,15 +75,22 @@ function App() {
     const hasFiscalYearQuarter =
       result.columns.includes('fiscal_year') && result.columns.includes('fiscal_quarter')
 
+    const toChartValue = (row: Record<string, unknown>) => {
+      const raw = row[numericColumn]
+      const normalized = Number(raw)
+      return Number.isFinite(normalized) ? normalized : 0
+    }
+
     if (hasFiscalYearQuarter) {
       const chartRows = result.rows.map((row) => ({
         ...row,
         quarter_label: `FY${String(row.fiscal_year ?? '')} Q${String(row.fiscal_quarter ?? '')}`,
+        chart_value: toChartValue(row),
       }))
 
       return {
         labelKey: 'quarter_label',
-        valueKey: numericColumn,
+        valueKey: 'chart_value',
         chartType: 'bar',
         data: chartRows,
       } as const
@@ -93,9 +100,9 @@ function App() {
 
     return {
       labelKey: firstColumn,
-      valueKey: numericColumn,
+      valueKey: 'chart_value',
       chartType: isTimeSeries ? 'line' : 'bar',
-      data: result.rows,
+      data: result.rows.map((row) => ({ ...row, chart_value: toChartValue(row) })),
     } as const
   }, [latestRun])
 
@@ -278,8 +285,8 @@ function App() {
                         <LineChart data={chartConfig.data}>
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis dataKey={chartConfig.labelKey} />
-                          <YAxis />
-                          <Tooltip />
+                          <YAxis tickFormatter={(value) => Number(value).toLocaleString()} width={72} />
+                          <Tooltip formatter={(value) => Number(value).toLocaleString()} />
                           <Legend />
                           <Line
                             type="monotone"
@@ -292,8 +299,8 @@ function App() {
                         <BarChart data={chartConfig.data}>
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis dataKey={chartConfig.labelKey} />
-                          <YAxis />
-                          <Tooltip />
+                          <YAxis tickFormatter={(value) => Number(value).toLocaleString()} width={72} />
+                          <Tooltip formatter={(value) => Number(value).toLocaleString()} />
                           <Legend />
                           <Bar dataKey={chartConfig.valueKey} fill="#d97706" />
                         </BarChart>
