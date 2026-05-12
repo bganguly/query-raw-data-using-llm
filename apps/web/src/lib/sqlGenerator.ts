@@ -94,12 +94,12 @@ function buildTopEmployersApplicationsSql(queryLower: string) {
   const yearFilter = extractCalendarYearFilter(queryLower)
   const fiscalFilter = extractFiscalFilter(queryLower)
   const employerPrefixFilter = extractEmployerPrefixFilter(queryLower)
+  const employerExpr = "COALESCE(NULLIF(TRIM(employer), ''), 'N/A - Employer Not Published')"
 
-  return `SELECT employer, COUNT(*) AS applications
+  return `SELECT ${employerExpr} AS employer, COUNT(*) AS applications
 FROM h1b_raw
-WHERE employer IS NOT NULL
-  AND TRIM(employer) <> ''${yearFilter}${fiscalFilter}${employerPrefixFilter}
-GROUP BY employer
+WHERE 1=1${yearFilter}${fiscalFilter}${employerPrefixFilter}
+GROUP BY 1
 ORDER BY applications DESC
 LIMIT ${requestedLimit}`
 }

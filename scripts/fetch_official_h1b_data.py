@@ -63,6 +63,29 @@ def parse_year(row: dict, fallback_year: int) -> int:
     return fallback_year
 
 
+def resolve_employer_name(row: dict, status: str) -> str:
+    employer = as_text(row.get("EMPLOYER_NAME") or row.get("EMPLOYER_NAME_DECLARED"))
+
+    if employer:
+        return employer
+
+    alternate_name = as_text(
+        row.get("TRADE_NAME_DBA")
+        or row.get("SECONDARY_ENTITY_BUSINESS_NAME")
+        or row.get("LAWFIRM_NAME_BUSINESS_NAME")
+        or row.get("PREPARER_BUSINESS_NAME")
+    )
+
+    if alternate_name:
+        return alternate_name
+
+    # Many FY2026 Q1 rows are not adjudicated yet and omit employer in the disclosure extract.
+    if not status:
+        return "N/A - Employer Not Published"
+
+    return ""
+
+
 def iter_fiscal_quarters(start_fy: int, start_quarter: int, end_fy: int, end_quarter: int) -> Iterator[tuple[int, int]]:
     fy = start_fy
     quarter = start_quarter
@@ -121,8 +144,8 @@ def convert_dol_xlsx_to_normalized_csv(
         if visa_class and visa_class not in {"H-1B", "H-1B1", "E-3"}:
             continue
 
-        employer = as_text(row.get("EMPLOYER_NAME")
-                           or row.get("EMPLOYER_NAME_DECLARED"))
+        status = as_text(row.get("CASE_STATUS") or row.get("STATUS"))
+        employer = resolve_employer_name(row, status)
         job_title = as_text(row.get("JOB_TITLE") or row.get("SOC_TITLE"))
         country = as_text(row.get("WORKSITE_COUNTRY") or row.get(
             "COUNTRY_OF_CITIZENSHIP") or "Unknown")
@@ -134,7 +157,6 @@ def convert_dol_xlsx_to_normalized_csv(
             or parse_number(row.get("WAGE_RATE_OF_PAY_TO"))
             or parse_number(row.get("PREVAILING_WAGE"))
         )
-        status = as_text(row.get("CASE_STATUS") or row.get("STATUS"))
         year = parse_year(row, fallback_year)
 
         writer.writerow(
