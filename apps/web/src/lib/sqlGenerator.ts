@@ -89,6 +89,15 @@ function isTopEmployersApplicationsIntent(queryLower: string) {
   return hasTop && hasEmployer && hasApplications && !hasApprovals
 }
 
+function isTopEmployersApprovalsByYearIntent(queryLower: string) {
+  const hasTop = queryLower.includes('top')
+  const hasEmployer = queryLower.includes('employer')
+  const hasApprovals = /(approval|approvals|approved|certified)/i.test(queryLower)
+  const asksByYear = /\b(by|per|each)\s+year\b|\byearly\b/i.test(queryLower)
+
+  return hasTop && hasEmployer && hasApprovals && asksByYear
+}
+
 function isCountIntent(queryLower: string) {
   const asksForCount = /\b(how\s+many|count|number\s+of|total)\b/i.test(queryLower)
   const asksAboutH1b = /\b(h-?1bs?|hi1bs?|h1bs?|lca|application|applications|filing|filings)\b/i.test(
@@ -183,6 +192,25 @@ WHERE 1=1${yearFilter}${fiscalFilter}${employerPrefixFilter}
 GROUP BY 1
 ORDER BY applications DESC
 LIMIT ${requestedLimit}`
+}
+
+function buildTopEmployersApprovalsByYearSql(queryLower: string) {
+  const requestedLimit = parseRequestedLimit(queryLower) ?? 10
+
+  return `WITH ranked AS (
+  SELECT
+    year,
+    employer,
+    COUNT(*) AS approvals,
+    ROW_NUMBER() OVER (PARTITION BY year ORDER BY COUNT(*) DESC) AS rank_in_year
+  FROM h1b_raw
+  WHERE status LIKE 'Certified%'
+  GROUP BY year, employer
+)
+SELECT year, employer, approvals
+FROM ranked
+WHERE rank_in_year <= ${requestedLimit}
+ORDER BY year, approvals DESC, employer`
 }
 
 function applyStartsWithEmployerConstraint(sql: string, queryLower: string) {
@@ -315,6 +343,14 @@ function applyTopEmployersApplicationsConstraint(sql: string, queryLower: string
   return buildTopEmployersApplicationsSql(queryLower)
 }
 
+function applyTopEmployersApprovalsByYearConstraint(sql: string, queryLower: string) {
+  if (!isTopEmployersApprovalsByYearIntent(queryLower)) {
+    return sql
+  }
+
+  return buildTopEmployersApprovalsByYearSql(queryLower)
+}
+
 function applyCountIntentConstraint(sql: string, queryLower: string) {
   if (!isCountIntent(queryLower)) {
     return sql
@@ -359,6 +395,10 @@ function deterministicFallbackSql(query: string) {
 
   if (isTopEmployersApplicationsIntent(q)) {
     return buildTopEmployersApplicationsSql(q)
+  }
+
+  if (isTopEmployersApprovalsByYearIntent(q)) {
+    return buildTopEmployersApprovalsByYearSql(q)
   }
 
   if (q.includes('top') && q.includes('employer') && q.includes('approval')) {
@@ -417,8 +457,11 @@ export async function generateSqlFromNl(input: SqlGenerationInput) {
         applyCountsByQuarterConstraint(
           applyCountIntentConstraint(
             applyTopEmployersApplicationsConstraint(
-              applyRequestedLimit(
-                applyFiscalPeriodConstraint(normalizeEmployerEquality(fallbackSql), queryLower),
+              applyTopEmployersApprovalsByYearConstraint(
+                applyRequestedLimit(
+                  applyFiscalPeriodConstraint(normalizeEmployerEquality(fallbackSql), queryLower),
+                  queryLower,
+                ),
                 queryLower,
               ),
               queryLower,
@@ -475,8 +518,11 @@ export async function generateSqlFromNl(input: SqlGenerationInput) {
       applyCountsByQuarterConstraint(
         applyCountIntentConstraint(
           applyTopEmployersApplicationsConstraint(
-            applyRequestedLimit(
-              applyFiscalPeriodConstraint(normalizeEmployerEquality(cleanedSql), queryLower),
+            applyTopEmployersApprovalsByYearConstraint(
+              applyRequestedLimit(
+                applyFiscalPeriodConstraint(normalizeEmployerEquality(cleanedSql), queryLower),
+                queryLower,
+              ),
               queryLower,
             ),
             queryLower,
