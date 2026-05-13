@@ -25,8 +25,10 @@ def null_sparse_text_columns(table: pa.Table) -> pa.Table:
             continue
 
         col = updated[column_name]
-        normalized = pc.utf8_lower(pc.utf8_trim_whitespace(pc.fill_null(col, "")))
-        missing_mask = pc.is_in(normalized, value_set=pa.array(MISSING_TEXT_MARKERS))
+        normalized = pc.utf8_lower(
+            pc.utf8_trim_whitespace(pc.fill_null(col, "")))
+        missing_mask = pc.is_in(
+            normalized, value_set=pa.array(MISSING_TEXT_MARKERS))
         missing_count = pc.sum(pc.cast(missing_mask, pa.int64())).as_py() or 0
         missing_ratio = missing_count / updated.num_rows
 
