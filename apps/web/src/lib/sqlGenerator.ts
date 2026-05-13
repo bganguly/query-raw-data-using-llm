@@ -234,6 +234,7 @@ function buildTopEmployersByYearSql(queryLower: string) {
   const employerPrefixFilter = extractEmployerPrefixFilter(queryLower)
   const employerExpr = "COALESCE(NULLIF(TRIM(employer), ''), 'N/A - Employer Not Published')"
   const orderDirection = /\bbottom\b/i.test(queryLower) ? 'ASC' : 'DESC'
+  const topStatusFilter = /\btop\b/i.test(queryLower) ? " AND status LIKE 'Certified%'" : ''
 
   return `WITH ranked AS (
   SELECT
@@ -242,7 +243,7 @@ function buildTopEmployersByYearSql(queryLower: string) {
     COUNT(*) AS applications,
     ROW_NUMBER() OVER (PARTITION BY fiscal_year ORDER BY COUNT(*) ${orderDirection}) AS rank_in_year
   FROM h1b_raw
-  WHERE 1=1${employerPrefixFilter}
+  WHERE 1=1${topStatusFilter}${employerPrefixFilter}
   GROUP BY fiscal_year, 2
 )
 SELECT fiscal_year, employer, applications
@@ -255,6 +256,7 @@ function buildTopWagesSql(queryLower: string) {
   const requestedLimit = parseRequestedLimit(queryLower) ?? 100
   const employerPrefixFilter = extractEmployerPrefixFilter(queryLower)
   const explicitFiscalFilter = extractFiscalFilter(queryLower)
+  const topStatusFilter = /\btop\b/i.test(queryLower) ? " AND status LIKE 'Certified%'" : ''
   const monthNumber = parseMonthNumber(queryLower)
   const calendarYear = parseCalendarYear(queryLower)
   let periodFilter = explicitFiscalFilter
@@ -276,6 +278,7 @@ function buildTopWagesSql(queryLower: string) {
   return `SELECT employer, job_title, work_location, country, status, fiscal_year, fiscal_quarter, wage
 FROM h1b_raw
 WHERE wage IS NOT NULL${periodFilter}${employerPrefixFilter}
+${topStatusFilter}
 ORDER BY wage DESC
 LIMIT ${requestedLimit}`
 }
@@ -285,6 +288,7 @@ function buildTopEmployersByYearQuarterSql(queryLower: string) {
   const employerPrefixFilter = extractEmployerPrefixFilter(queryLower)
   const employerExpr = "COALESCE(NULLIF(TRIM(employer), ''), 'N/A - Employer Not Published')"
   const orderDirection = /\bbottom\b/i.test(queryLower) ? 'ASC' : 'DESC'
+  const topStatusFilter = /\btop\b/i.test(queryLower) ? " AND status LIKE 'Certified%'" : ''
 
   return `WITH ranked AS (
   SELECT
@@ -294,7 +298,7 @@ function buildTopEmployersByYearQuarterSql(queryLower: string) {
     COUNT(*) AS applications,
     ROW_NUMBER() OVER (PARTITION BY fiscal_year, fiscal_quarter ORDER BY COUNT(*) ${orderDirection}) AS rank_in_period
   FROM h1b_raw
-  WHERE 1=1${employerPrefixFilter}
+  WHERE 1=1${topStatusFilter}${employerPrefixFilter}
   GROUP BY fiscal_year, fiscal_quarter, 3
 )
 SELECT fiscal_year, fiscal_quarter, employer, applications
@@ -362,10 +366,11 @@ function buildTopEmployersApplicationsSql(queryLower: string) {
   const employerPrefixFilter = extractEmployerPrefixFilter(queryLower)
   const employerExpr = "COALESCE(NULLIF(TRIM(employer), ''), 'N/A - Employer Not Published')"
   const orderDirection = /\bbottom\b/i.test(queryLower) ? 'ASC' : 'DESC'
+  const topStatusFilter = /\btop\b/i.test(queryLower) ? " AND status LIKE 'Certified%'" : ''
 
   return `SELECT ${employerExpr} AS employer, COUNT(*) AS applications
 FROM h1b_raw
-WHERE 1=1${yearFilter}${fiscalFilter}${employerPrefixFilter}
+WHERE 1=1${topStatusFilter}${yearFilter}${fiscalFilter}${employerPrefixFilter}
 GROUP BY 1
 ORDER BY applications ${orderDirection}
 LIMIT ${requestedLimit}`
@@ -378,13 +383,14 @@ function buildEmployerPercentageSql(queryLower: string) {
   const employerPrefixFilter = extractEmployerPrefixFilter(queryLower)
   const employerExpr = "COALESCE(NULLIF(TRIM(employer), ''), 'N/A - Employer Not Published')"
   const orderDirection = /\bbottom\b/i.test(queryLower) ? 'ASC' : 'DESC'
+  const topStatusFilter = /\btop\b/i.test(queryLower) ? " AND status LIKE 'Certified%'" : ''
 
   return `SELECT
   ${employerExpr} AS employer,
   COUNT(*) AS applications,
   ROUND(100.0 * COUNT(*) / SUM(COUNT(*)) OVER (), 2) AS application_share_pct
 FROM h1b_raw
-WHERE 1=1${yearFilter}${fiscalFilter}${employerPrefixFilter}
+WHERE 1=1${topStatusFilter}${yearFilter}${fiscalFilter}${employerPrefixFilter}
 GROUP BY 1
 ORDER BY application_share_pct ${orderDirection}
 LIMIT ${requestedLimit}`
