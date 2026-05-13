@@ -190,9 +190,8 @@ function App() {
           <h1>H1B Natural Language Query System</h1>
           <p className="subtitle">
             Natural language to SQL to DuckDB execution on raw CSV/Parquet data, then structured
-            table and chart output.
+            table and chart output (fiscal quarters in use).
           </p>
-          <p className="subtitle">fiscal quarters in use</p>
         </div>
       </section>
 
