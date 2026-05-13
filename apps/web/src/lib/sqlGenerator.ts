@@ -329,7 +329,9 @@ function applySqlGuards(sql: string, queryLower: string) {
 }
 
 function enforceTopQueryLimit(sql: string, queryLower: string) {
-  const asksTopOrBottom = /\b(top|bottom)\b/i.test(queryLower)
+  const asksTopOrBottom = /\b(top|bottom|highest|lowest|max(?:imum)?|min(?:imum)?|best\s*-?\s*paid)\b/i.test(
+    queryLower,
+  )
   const hasLimit = /\blimit\s+\d+\b/i.test(sql)
 
   if (!asksTopOrBottom || hasLimit) {
@@ -337,7 +339,8 @@ function enforceTopQueryLimit(sql: string, queryLower: string) {
   }
 
   const requestedLimit = parseRequestedLimit(queryLower)
-  return `${sql.trim()}\nLIMIT ${requestedLimit}`
+  const normalizedSql = sql.trim().replace(/;+\s*$/, '')
+  return `${normalizedSql}\nLIMIT ${requestedLimit}`
 }
 
 function normalizeParquetSource(sql: string, datasetPath?: string) {
