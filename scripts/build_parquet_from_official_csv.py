@@ -8,6 +8,40 @@ import pyarrow.csv as csv
 import pyarrow.dataset as ds
 import pyarrow.parquet as pq
 
+SPARSE_TEXT_COLUMNS = ("country",)
+MISSING_TEXT_MARKERS = ("", "unknown", "n/a", "na", "null", "none")
+MISSING_RATIO_THRESHOLD = 0.90
+
+
+def null_sparse_text_columns(table: pa.Table) -> pa.Table:
+    if table.num_rows == 0:
+        return table
+
+    updated = table
+
+    for column_name in SPARSE_TEXT_COLUMNS:
+        column_index = updated.schema.get_field_index(column_name)
+        if column_index < 0:
+            continue
+
+        col = updated[column_name]
+        normalized = pc.utf8_lower(pc.utf8_trim_whitespace(pc.fill_null(col, "")))
+        missing_mask = pc.is_in(normalized, value_set=pa.array(MISSING_TEXT_MARKERS))
+        missing_count = pc.sum(pc.cast(missing_mask, pa.int64())).as_py() or 0
+        missing_ratio = missing_count / updated.num_rows
+
+        if missing_ratio >= MISSING_RATIO_THRESHOLD:
+            updated = updated.set_column(
+                column_index,
+                column_name,
+                pa.nulls(updated.num_rows, type=pa.string()),
+            )
+            print(
+                f"Column '{column_name}' is {missing_ratio:.3%} missing/unknown; writing NULLs to parquet instead of placeholders."
+            )
+
+    return updated
+
 
 def build_parquet(csv_path: pathlib.Path, output_dir: pathlib.Path, max_rows: int | None) -> None:
     if not csv_path.exists():
@@ -34,6 +68,8 @@ def build_parquet(csv_path: pathlib.Path, output_dir: pathlib.Path, max_rows: in
 
     if max_rows is not None:
         table = table.slice(0, max_rows)
+
+    table = null_sparse_text_columns(table)
 
     dataset_stem = csv_path.stem
     single_parquet = output_dir / f"{dataset_stem}.parquet"
