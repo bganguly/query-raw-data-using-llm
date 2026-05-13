@@ -15,6 +15,8 @@
   <text x="52" y="178" font-size="24" font-family="Arial, Helvetica, sans-serif" fill="#162133" font-weight="bold">Input Source</text>
   <text x="52" y="212" font-size="20" font-family="Arial, Helvetica, sans-serif" fill="#162133">DOL LCA Quarterly XLSX</text>
   <text x="52" y="242" font-size="18" font-family="Arial, Helvetica, sans-serif" fill="#162133">(only one source)</text>
+  <text x="52" y="272" font-size="13" font-family="Arial, Helvetica, sans-serif" fill="#162133">https://www.dol.gov/sites/dolgov/files/ETA/oflc/pdfs/</text>
+  <text x="52" y="292" font-size="13" font-family="Arial, Helvetica, sans-serif" fill="#162133">LCA_Disclosure_Data_FY{FY}_Q{Q}.xlsx</text>
 
   <rect x="450" y="120" rx="18" ry="18" width="430" height="260" fill="#ffffff" stroke="#243a5c" stroke-width="4"/>
   <text x="472" y="158" font-size="24" font-family="Arial, Helvetica, sans-serif" fill="#162133" font-weight="bold">Local Download + Processing</text>
