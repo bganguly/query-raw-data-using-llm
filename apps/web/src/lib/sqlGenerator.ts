@@ -12,6 +12,33 @@ type FiscalPeriod = {
   fiscalQuarter?: number
 }
 
+const MONTH_NAME_TO_NUMBER: Record<string, number> = {
+  january: 1,
+  jan: 1,
+  february: 2,
+  feb: 2,
+  march: 3,
+  mar: 3,
+  april: 4,
+  apr: 4,
+  may: 5,
+  june: 6,
+  jun: 6,
+  july: 7,
+  jul: 7,
+  august: 8,
+  aug: 8,
+  september: 9,
+  sep: 9,
+  sept: 9,
+  october: 10,
+  oct: 10,
+  november: 11,
+  nov: 11,
+  december: 12,
+  dec: 12,
+}
+
 function parseStartsWithPrefix(queryLower: string) {
   const quotedMatch = queryLower.match(/starting\s+with\s+["']([a-z0-9 _.-]+)["']/i)
   const plainMatch = queryLower.match(/starting\s+with\s+([a-z0-9_.-]+)/i)
@@ -52,6 +79,34 @@ function parseRequestedLimit(queryLower: string): number | null {
   }
 
   return Math.min(parsed, 1000)
+}
+
+function parseCalendarYear(queryLower: string): number | null {
+  const yearMatch = queryLower.match(/(20\d{2})/)
+  return yearMatch ? Number(yearMatch[1]) : null
+}
+
+function parseMonthNumber(queryLower: string): number | null {
+  for (const [monthName, monthNumber] of Object.entries(MONTH_NAME_TO_NUMBER)) {
+    if (new RegExp(`\\b${monthName}\\b`, 'i').test(queryLower)) {
+      return monthNumber
+    }
+  }
+
+  return null
+}
+
+function toFiscalQuarter(monthNumber: number): number {
+  if (monthNumber >= 10) {
+    return 1
+  }
+  if (monthNumber >= 1 && monthNumber <= 3) {
+    return 2
+  }
+  if (monthNumber >= 4 && monthNumber <= 6) {
+    return 3
+  }
+  return 4
 }
 
 function extractCalendarYearFilter(queryLower: string) {
@@ -166,6 +221,14 @@ function isCountsByYearIntent(queryLower: string) {
   return asksByYear && asksAboutH1b && asksForCount
 }
 
+function isTopWagesIntent(queryLower: string) {
+  const hasWage = /\b(wage|wages|salary|salaries)\b/i.test(queryLower)
+  const asksTop = /\b(top|highest|max|maximum|best[-\s]*paid|high\s*wage)\b/i.test(queryLower)
+  const asksAverage = /\b(avg|average|mean)\b/i.test(queryLower)
+
+  return hasWage && asksTop && !asksAverage
+}
+
 function buildTopEmployersByYearSql(queryLower: string) {
   const requestedLimit = parseRequestedLimit(queryLower) ?? 10
   const employerPrefixFilter = extractEmployerPrefixFilter(queryLower)
@@ -186,6 +249,35 @@ SELECT fiscal_year, employer, applications
 FROM ranked
 WHERE rank_in_year <= ${requestedLimit}
 ORDER BY fiscal_year, applications ${orderDirection}, employer`
+}
+
+function buildTopWagesSql(queryLower: string) {
+  const requestedLimit = parseRequestedLimit(queryLower) ?? 100
+  const employerPrefixFilter = extractEmployerPrefixFilter(queryLower)
+  const explicitFiscalFilter = extractFiscalFilter(queryLower)
+  const monthNumber = parseMonthNumber(queryLower)
+  const calendarYear = parseCalendarYear(queryLower)
+  let periodFilter = explicitFiscalFilter
+
+  if (!periodFilter && monthNumber !== null) {
+    const fiscalQuarter = toFiscalQuarter(monthNumber)
+    if (calendarYear !== null) {
+      const fiscalYear = monthNumber >= 10 ? calendarYear + 1 : calendarYear
+      periodFilter = ` AND fiscal_year = ${fiscalYear} AND fiscal_quarter = ${fiscalQuarter}`
+    } else {
+      periodFilter = ` AND fiscal_quarter = ${fiscalQuarter}`
+    }
+  }
+
+  if (!periodFilter) {
+    periodFilter = extractCalendarYearFilter(queryLower)
+  }
+
+  return `SELECT employer, job_title, work_location, country, status, fiscal_year, fiscal_quarter, wage
+FROM h1b_raw
+WHERE wage IS NOT NULL${periodFilter}${employerPrefixFilter}
+ORDER BY wage DESC
+LIMIT ${requestedLimit}`
 }
 
 function buildTopEmployersByYearQuarterSql(queryLower: string) {
@@ -488,6 +580,14 @@ function applyTopEmployersApprovalsByYearConstraint(sql: string, queryLower: str
   return buildTopEmployersApprovalsByYearSql(queryLower)
 }
 
+function applyTopWagesConstraint(sql: string, queryLower: string) {
+  if (!isTopWagesIntent(queryLower)) {
+    return sql
+  }
+
+  return buildTopWagesSql(queryLower)
+}
+
 function applyCountIntentConstraint(sql: string, queryLower: string) {
   if (!isCountIntent(queryLower)) {
     return sql
@@ -532,6 +632,10 @@ function deterministicFallbackSql(query: string) {
 
   if (isTopEmployersApplicationsIntent(q)) {
     return buildTopEmployersApplicationsSql(q)
+  }
+
+  if (isTopWagesIntent(q)) {
+    return buildTopWagesSql(q)
   }
 
   if (isTopBottomEmployersByYearQuarterIntent(q)) {
@@ -615,8 +719,11 @@ export async function generateSqlFromNl(input: SqlGenerationInput) {
                   applyTopBottomEmployersGenericConstraint(
                     applyEmployerPercentageConstraint(
                       applyTopEmployersApprovalsByYearConstraint(
-                        applyRequestedLimit(
-                          applyFiscalPeriodConstraint(normalizeEmployerEquality(fallbackSql), queryLower),
+                        applyTopWagesConstraint(
+                          applyRequestedLimit(
+                            applyFiscalPeriodConstraint(normalizeEmployerEquality(fallbackSql), queryLower),
+                            queryLower,
+                          ),
                           queryLower,
                         ),
                         queryLower,
@@ -688,8 +795,11 @@ export async function generateSqlFromNl(input: SqlGenerationInput) {
                 applyTopBottomEmployersGenericConstraint(
                   applyEmployerPercentageConstraint(
                     applyTopEmployersApprovalsByYearConstraint(
-                      applyRequestedLimit(
-                        applyFiscalPeriodConstraint(normalizeEmployerEquality(cleanedSql), queryLower),
+                      applyTopWagesConstraint(
+                        applyRequestedLimit(
+                          applyFiscalPeriodConstraint(normalizeEmployerEquality(cleanedSql), queryLower),
+                          queryLower,
+                        ),
                         queryLower,
                       ),
                       queryLower,
