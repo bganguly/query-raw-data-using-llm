@@ -243,7 +243,7 @@ def main() -> None:
         args.parallel_normalize = 1
 
     root = pathlib.Path(__file__).resolve().parents[1]
-    data_dir = root / "apps" / "web" / "public" / "data"
+    data_dir = root / "data"
     source_dir = data_dir / "sources"
     source_dir.mkdir(parents=True, exist_ok=True)
 

@@ -9,7 +9,7 @@ fi
 BUCKET="$1"
 REGION="${2:-us-east-1}"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PARQUET_DIR="$ROOT_DIR/apps/web/public/data/parquet"
+PARQUET_DIR="$ROOT_DIR/data/parquet"
 DATASET_STEM="dol_lca_h1b_fy2020_q1_to_fy2026_q1"
 
 if [[ ! -d "$PARQUET_DIR" ]]; then

@@ -106,12 +106,12 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--csv",
-        default="apps/web/public/data/dol_lca_h1b_fy2020_q1_to_fy2026_q1.csv",
+        default="data/dol_lca_h1b_fy2020_q1_to_fy2026_q1.csv",
         help="Path to normalized CSV input.",
     )
     parser.add_argument(
         "--out",
-        default="apps/web/public/data/parquet",
+        default="data/parquet",
         help="Output directory for parquet files.",
     )
     parser.add_argument(

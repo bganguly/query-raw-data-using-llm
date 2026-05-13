@@ -16,9 +16,6 @@ echo "[infra:up] bucket: $BUCKET"
 echo "[infra:up] installing python deps (openpyxl, pyarrow)..."
 python3 -m pip install --user openpyxl pyarrow
 
-echo "[infra:up] installing npm deps..."
-npm install
-
 echo "[infra:up] fetching official datasets..."
 npm run fetch:official-data
 
