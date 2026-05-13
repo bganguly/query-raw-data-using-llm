@@ -32,16 +32,7 @@ Run guidance:
 
 > [!IMPORTANT]
 > - If this is your first time working on this repo, use the usual 3-args flow (`bucket-name`, `aws-region`, `version-tag`).
-> - If you have done this before, first check whether parquet already exists (local `data/parquet/` and/or in your S3 bucket). If it exists, run an independent repeat flow where you only parse new XLSX data and upload refreshed parquet artifacts, instead of treating every run as a full first-time bootstrap.
-
-To fetch all quarters from FY2020 Q1 through the current quarter dynamically:
-
-```bash
-month=$(date +%-m); year=$(date +%Y)
-if (( month >= 10 )); then end_fy=$((year + 1)); else end_fy=$year; fi
-if (( month >= 10 )); then fq=1; elif (( month >= 7 )); then fq=4; elif (( month >= 4 )); then fq=3; else fq=2; fi
-python3 scripts/fetch_official_h1b_data.py --start-fy 2020 --start-quarter 1 --end-fy $end_fy --end-quarter $fq --parallel-downloads 4 --parallel-normalize 2
-```
+> - **Incremental fetching is automatic.** `data/manifest.json` tracks the last processed fiscal quarter. On every run, the fetch script reads the manifest and only downloads quarters that are newer than the last recorded one — no manual range args needed.
 
 Default goal (recommended): build and upload parquet to S3 in one flow:
 
