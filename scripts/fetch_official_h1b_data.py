@@ -291,8 +291,10 @@ def main() -> None:
             manifest["last_fy"], manifest["last_quarter"]
         )
         is_incremental = True
-        print(f"[manifest] Last processed: FY{manifest['last_fy']} Q{manifest['last_quarter']}")
-        print(f"[manifest] Resuming from: FY{effective_start_fy} Q{effective_start_quarter}")
+        print(
+            f"[manifest] Last processed: FY{manifest['last_fy']} Q{manifest['last_quarter']}")
+        print(
+            f"[manifest] Resuming from: FY{effective_start_fy} Q{effective_start_quarter}")
     else:
         effective_start_fy = 2020
         effective_start_quarter = 1
@@ -304,11 +306,13 @@ def main() -> None:
         effective_end_quarter = args.end_quarter
     else:
         effective_end_fy, effective_end_quarter = compute_current_fiscal_quarter()
-        print(f"[manifest] Auto-detected current quarter: FY{effective_end_fy} Q{effective_end_quarter}")
+        print(
+            f"[manifest] Auto-detected current quarter: FY{effective_end_fy} Q{effective_end_quarter}")
 
     # Nothing to do if already up to date.
     if (effective_start_fy, effective_start_quarter) > (effective_end_fy, effective_end_quarter):
-        print(f"Already up to date through FY{effective_end_fy} Q{effective_end_quarter}. Nothing to download.")
+        print(
+            f"Already up to date through FY{effective_end_fy} Q{effective_end_quarter}. Nothing to download.")
         return
 
     if effective_start_quarter < 1 or effective_start_quarter > 4:
@@ -450,7 +454,8 @@ def main() -> None:
     # Update manifest with the new last-processed quarter.
     manifest_start_fy = manifest["start_fy"] if manifest else effective_start_fy
     manifest_start_quarter = manifest["start_quarter"] if manifest else effective_start_quarter
-    write_manifest(manifest_path, manifest_start_fy, manifest_start_quarter, effective_end_fy, effective_end_quarter)
+    write_manifest(manifest_path, manifest_start_fy,
+                   manifest_start_quarter, effective_end_fy, effective_end_quarter)
 
     print("Done.")
     print(
