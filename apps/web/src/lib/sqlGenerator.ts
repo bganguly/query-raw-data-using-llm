@@ -233,6 +233,25 @@ function formatApiError(
   return `${provider} request failed (${status}): ${message}`
 }
 
+function formatNetworkFetchError(provider: LlmProvider, message: string) {
+  if (provider === 'anthropic') {
+    return (
+      'Network fetch failed for Anthropic from browser. This is usually a CORS/browser restriction for direct API calls. ' +
+      'Use OpenRouter for browser-based Claude access, or route Anthropic requests through your backend proxy. ' +
+      `Original error: ${message}`
+    )
+  }
+
+  if (provider === 'openrouter') {
+    return (
+      'Network fetch failed for OpenRouter. Check internet connectivity, browser extensions/ad blockers, and endpoint access. ' +
+      `Original error: ${message}`
+    )
+  }
+
+  return `Network fetch failed for OpenAI. Check connectivity and browser network restrictions. Original error: ${message}`
+}
+
 async function requestOpenAiCompatibleSql(
   endpoint: string,
   apiKey: string,
@@ -327,16 +346,22 @@ export async function generateSqlFromNl(input: SqlGenerationInput) {
   const prompt = `You are a SQL expert. Given this schema:\n${input.schemaPrompt}\n\nConvert this question to SQL (DuckDB syntax, reading from parquet on S3):\n"${trimmedQuery}"\n\nReturn ONLY the SQL query, nothing else.`
 
   for (let attempt = 1; attempt <= MAX_API_ATTEMPTS; attempt += 1) {
-    const response =
-      provider === 'anthropic'
-        ? await requestAnthropicSql(input.apiKey, model, prompt)
-        : await requestOpenAiCompatibleSql(
-            provider === 'openrouter' ? OPENROUTER_CHAT_COMPLETIONS_URL : OPENAI_CHAT_COMPLETIONS_URL,
-            input.apiKey,
-            model,
-            prompt,
-            provider === 'openrouter',
-          )
+    let response: Response
+    try {
+      response =
+        provider === 'anthropic'
+          ? await requestAnthropicSql(input.apiKey, model, prompt)
+          : await requestOpenAiCompatibleSql(
+              provider === 'openrouter' ? OPENROUTER_CHAT_COMPLETIONS_URL : OPENAI_CHAT_COMPLETIONS_URL,
+              input.apiKey,
+              model,
+              prompt,
+              provider === 'openrouter',
+            )
+    } catch (error) {
+      const rawMessage = error instanceof Error ? error.message : 'Unknown network error'
+      throw new Error(formatNetworkFetchError(provider, rawMessage), { cause: error })
+    }
 
     if (!response.ok) {
       const parsedError = await parseApiError(response)
