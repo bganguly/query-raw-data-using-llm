@@ -10,6 +10,10 @@ Pipeline-only repository that downloads official H-1B LCA disclosures, normalize
 - Uploads parquet outputs to S3.
 - Builds a local-only employer-to-possible-country parquet mapping (heuristic).
 
+## Pipeline Diagram
+
+![Pipeline flow](docs/images/pipeline-flow.png)
+
 ## Prerequisites
 
 - Python 3.10+
