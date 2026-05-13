@@ -97,11 +97,14 @@ function App() {
     }
 
     const isTimeSeries = /year|month|date/i.test(firstColumn)
+    const isAggregateQuery = /\bgroup\s+by\b|\bcount\s*\(|\bsum\s*\(|\bavg\s*\(|\bmin\s*\(|\bmax\s*\(|\brow_number\s*\(/i.test(
+      latestRun?.sql ?? '',
+    )
 
     return {
       labelKey: firstColumn,
       valueKey: 'chart_value',
-      chartType: isTimeSeries ? 'line' : 'bar',
+      chartType: isAggregateQuery ? 'bar' : isTimeSeries ? 'line' : 'bar',
       data: result.rows.map((row) => ({ ...row, chart_value: toChartValue(row) })),
     } as const
   }, [latestRun])
