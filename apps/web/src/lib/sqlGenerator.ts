@@ -328,6 +328,18 @@ function applySqlGuards(sql: string, queryLower: string) {
   )
 }
 
+function enforceTopQueryLimit(sql: string, queryLower: string) {
+  const asksTopOrBottom = /\b(top|bottom)\b/i.test(queryLower)
+  const hasLimit = /\blimit\s+\d+\b/i.test(sql)
+
+  if (!asksTopOrBottom || hasLimit) {
+    return sql
+  }
+
+  const requestedLimit = parseRequestedLimit(queryLower)
+  return `${sql.trim()}\nLIMIT ${requestedLimit}`
+}
+
 function normalizeParquetSource(sql: string, datasetPath?: string) {
   const activeDatasetPath = datasetPath?.trim()
   if (!activeDatasetPath) {
@@ -416,7 +428,8 @@ export async function generateSqlFromNl(input: SqlGenerationInput) {
       }
 
       const extractedSql = normalizeParquetSource(extractSqlOnly(content), activeDatasetPath)
-      return bypassSqlGuards ? extractedSql : applySqlGuards(extractedSql, queryLower)
+      const normalizedSql = bypassSqlGuards ? extractedSql : applySqlGuards(extractedSql, queryLower)
+      return enforceTopQueryLimit(normalizedSql, queryLower)
     }
 
     const data = (await response.json()) as {
@@ -429,7 +442,8 @@ export async function generateSqlFromNl(input: SqlGenerationInput) {
     }
 
     const extractedSql = normalizeParquetSource(extractSqlOnly(content), activeDatasetPath)
-    return bypassSqlGuards ? extractedSql : applySqlGuards(extractedSql, queryLower)
+    const normalizedSql = bypassSqlGuards ? extractedSql : applySqlGuards(extractedSql, queryLower)
+    return enforceTopQueryLimit(normalizedSql, queryLower)
   }
 
   throw new Error(`${provider} request failed after multiple attempts.`)
