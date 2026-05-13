@@ -31,9 +31,11 @@
   <text x="982" y="240" font-size="18" font-family="Arial, Helvetica, sans-serif" fill="#162133">upload_parquet_to_s3.sh</text>
 
   <rect x="1320" y="140" rx="18" ry="18" width="250" height="220" fill="#ffffff" stroke="#243a5c" stroke-width="4"/>
-  <text x="1342" y="178" font-size="24" font-family="Arial, Helvetica, sans-serif" fill="#162133" font-weight="bold">Another Repo</text>
-  <text x="1342" y="212" font-size="18" font-family="Arial, Helvetica, sans-serif" fill="#162133">Consumes uploaded parquet</text>
-  <text x="1342" y="240" font-size="18" font-family="Arial, Helvetica, sans-serif" fill="#162133">from S3 URL</text>
+  <text x="1342" y="178" font-size="20" font-family="Arial, Helvetica, sans-serif" fill="#162133" font-weight="bold">natural-language-to-</text>
+  <text x="1342" y="204" font-size="20" font-family="Arial, Helvetica, sans-serif" fill="#162133" font-weight="bold">llm-query-comparison</text>
+  <text x="1342" y="232" font-size="16" font-family="Arial, Helvetica, sans-serif" fill="#162133">(downstream repo)</text>
+  <text x="1342" y="260" font-size="18" font-family="Arial, Helvetica, sans-serif" fill="#162133">Consumes uploaded parquet</text>
+  <text x="1342" y="288" font-size="18" font-family="Arial, Helvetica, sans-serif" fill="#162133">from S3 URL</text>
 
   <line x1="350" y1="250" x2="450" y2="250" stroke="#2a58a5" stroke-width="8" marker-end="url(#arrow)"/>
   <line x1="880" y1="250" x2="960" y2="250" stroke="#2a58a5" stroke-width="8" marker-end="url(#arrow)"/>
