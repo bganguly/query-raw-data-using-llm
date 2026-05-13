@@ -24,13 +24,22 @@ python3 -m pip install --user openpyxl pyarrow
 
 ## Quick Start
 
-Run the full local data pipeline:
+Default goal (recommended): build and upload parquet to S3 in one flow:
+
+```bash
+npm run infra:up -- [bucket-name] [aws-region] [version-tag]
+```
+
+- If `bucket-name` is omitted, a unique bucket is created automatically.
+- If `version-tag` is provided, cache-busted URLs are also printed.
+
+Local-only pipeline (no S3 upload):
 
 ```bash
 npm run pipeline:run
 ```
 
-This executes:
+This local-only command executes:
 
 1. `npm run fetch:official-data`
 2. `npm run build:parquet`
