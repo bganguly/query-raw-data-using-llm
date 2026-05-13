@@ -63,6 +63,9 @@ function App() {
   const [history, setHistory] = useState<QueryRun[]>([])
   const modelPresets = MODEL_PRESETS_BY_PROVIDER[llmProvider]
   const usesCustomModel = !modelPresets.includes(llmModel)
+  const showFallbackDownload =
+    !!latestRun?.error &&
+    /(network fetch failed|failed to fetch|cors|backend proxy)/i.test(latestRun.error)
 
   const chartConfig = useMemo(() => {
     const result = latestRun?.result
@@ -325,6 +328,13 @@ function App() {
               </p>
               <pre>{latestRun.sql || '-- SQL generation failed before output --'}</pre>
               {latestRun.error && <p className="error-text">{latestRun.error}</p>}
+              {showFallbackDownload && (
+                <p>
+                  <a href="/downloads/llm-request-form.html" download>
+                    Download HTML fallback form
+                  </a>
+                </p>
+              )}
             </div>
           )}
         </article>
