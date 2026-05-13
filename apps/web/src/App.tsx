@@ -293,6 +293,10 @@ function App() {
             <small>
               Provider routes: OpenAI uses OpenAI API, Anthropic uses Anthropic Messages API,
               OpenRouter uses OpenRouter chat completions.
+              Download fallback plain HTML form:{' '}
+              <a href="/downloads/llm-request-form.html" download>
+                llm-request-form.html
+              </a>
             </small>
           </label>
           <label>
