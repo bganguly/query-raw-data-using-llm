@@ -3,6 +3,7 @@ export type LlmProvider = 'openai' | 'anthropic' | 'openrouter'
 type SqlGenerationInput = {
   query: string
   schemaPrompt: string
+  datasetPath?: string
   apiKey?: string
   model?: string
   provider?: LlmProvider
@@ -327,6 +328,20 @@ function applySqlGuards(sql: string, queryLower: string) {
   )
 }
 
+function normalizeParquetSource(sql: string, datasetPath?: string) {
+  const activeDatasetPath = datasetPath?.trim()
+  if (!activeDatasetPath) {
+    return sql
+  }
+
+  const escapedDatasetPath = activeDatasetPath.replace(/'/g, "''")
+
+  return sql.replace(
+    /read_parquet\(\s*['"][^'"]*(your-bucket|path\/h1b_raw\.parquet)[^'"]*['"]\s*\)/gi,
+    `read_parquet('${escapedDatasetPath}')`,
+  )
+}
+
 export async function generateSqlFromNl(input: SqlGenerationInput) {
   const trimmedQuery = input.query.trim()
   const queryLower = trimmedQuery.toLowerCase()
@@ -342,9 +357,14 @@ export async function generateSqlFromNl(input: SqlGenerationInput) {
   const provider = resolveProvider(input.provider)
   const model = input.model || 'gpt-4o-mini'
   const bypassSqlGuards = input.bypassSqlGuards ?? false
+  const activeDatasetPath = input.datasetPath?.trim() ?? ''
   ensureModelCompatible(provider, model)
 
-  const prompt = `You are a SQL expert. Given this schema:\n${input.schemaPrompt}\n\nConvert this question to SQL (DuckDB syntax) using only the table defined in the schema.\nDo not use read_parquet(), read_csv_auto(), read_csv(), or external file paths in SQL.\n\nQuestion:\n"${trimmedQuery}"\n\nReturn ONLY the SQL query, nothing else.`
+  const datasetRuntimeHint = activeDatasetPath
+    ? `Runtime dataset URL: ${activeDatasetPath}\nIf you use read_parquet(), use exactly this URL.`
+    : 'Runtime dataset URL is not provided. Prefer querying the table defined in schema.'
+
+  const prompt = `You are a SQL expert. Given this schema:\n${input.schemaPrompt}\n\n${datasetRuntimeHint}\n\nConvert this question to SQL (DuckDB syntax).\nYou may query the schema table directly, or read_parquet() only with the runtime dataset URL above.\n\nQuestion:\n"${trimmedQuery}"\n\nReturn ONLY the SQL query, nothing else.`
 
   for (let attempt = 1; attempt <= MAX_API_ATTEMPTS; attempt += 1) {
     let response: Response
@@ -395,7 +415,7 @@ export async function generateSqlFromNl(input: SqlGenerationInput) {
         throw new Error('anthropic did not return SQL output.')
       }
 
-      const extractedSql = extractSqlOnly(content)
+      const extractedSql = normalizeParquetSource(extractSqlOnly(content), activeDatasetPath)
       return bypassSqlGuards ? extractedSql : applySqlGuards(extractedSql, queryLower)
     }
 
@@ -408,7 +428,7 @@ export async function generateSqlFromNl(input: SqlGenerationInput) {
       throw new Error(`${provider} did not return SQL output.`)
     }
 
-    const extractedSql = extractSqlOnly(content)
+    const extractedSql = normalizeParquetSource(extractSqlOnly(content), activeDatasetPath)
     return bypassSqlGuards ? extractedSql : applySqlGuards(extractedSql, queryLower)
   }
 

@@ -174,6 +174,7 @@ function App() {
       generatedSql = await generateSqlFromNl({
         query,
         schemaPrompt: buildSqlGenerationPrompt(H1B_SCHEMA, DUCKDB_H1B_TABLE),
+        datasetPath,
         apiKey: llmApiKey,
         provider: llmProvider,
         model: llmModel,
