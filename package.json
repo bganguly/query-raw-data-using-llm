@@ -9,6 +9,7 @@
     "upload:s3:parquet": "bash scripts/upload_parquet_to_s3.sh",
     "create:cloudfront": "bash scripts/create_cloudfront_for_s3.sh",
     "infra:up": "bash scripts/infra_up.sh",
-    "infra:down": "bash scripts/infra_down.sh"
+    "infra:down": "bash scripts/infra_down.sh",
+    "generate:previews": "python3 scripts/generate_data_previews.py"
   }
 }
