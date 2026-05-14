@@ -51,41 +51,20 @@ Run guidance:
 
 ## Commands
 
-- Fetch and normalize official source data:
-
 ```bash
+# Fetch and normalize official source data
 npm run fetch:official-data
-```
 
-- Build parquet from normalized CSV:
-
-```bash
+# Build parquet from normalized CSV
 npm run build:parquet
-```
 
-- Upload parquet to S3:
+# Upload parquet to S3 (version-tag optional; prints cache-busted URLs if provided)
+npm run upload:s3:parquet -- <bucket-name> <aws-region> [version-tag]
 
-```bash
-npm run upload:s3:parquet -- <your-bucket-name> <aws-region> [version-tag]
-```
-
-Example with all three values:
-
-```bash
-npm run upload:s3:parquet -- h1b-lca-parquet-prod us-east-1 full_multi_fiscal_noempty_countrynull_$(date +%Y%m%d)
-```
-
-If `version-tag` is provided, the script also prints cache-busted URLs with `?v=<version-tag>`.
-
-- End-to-end infra flow (fetch + parquet + bucket setup + upload):
-
-```bash
+# End-to-end: fetch + parquet + bucket setup + upload
 npm run infra:up -- [bucket-name] [aws-region] [version-tag]
-```
 
-- Tear down infra bucket and objects:
-
-```bash
+# Tear down infra bucket and objects
 npm run infra:down -- [bucket-name] [aws-region]
 ```
 
