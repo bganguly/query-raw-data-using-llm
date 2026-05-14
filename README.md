@@ -17,17 +17,7 @@ Pipeline-only repository that downloads official H-1B LCA disclosures, normalize
 
 Sample rows at each pipeline stage (regenerate with `npm run generate:previews`).
 
-### Remote Source — DOL XLSX (raw columns)
-
-![Remote XLSX preview](docs/images/preview-remote-xlsx.png)
-
-### Local Normalized CSV
-
-![Normalized CSV preview](docs/images/preview-normalized-csv.png)
-
-### Local Parquet
-
-![Parquet preview](docs/images/preview-parquet.png)
+![Pipeline data preview](docs/images/preview-pipeline-stages.png)
 
 ## Prerequisites
 
