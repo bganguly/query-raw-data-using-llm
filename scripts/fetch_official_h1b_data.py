@@ -7,6 +7,7 @@ import os
 import pathlib
 import re
 import subprocess
+import sys
 from collections.abc import Iterator
 from concurrent.futures import ProcessPoolExecutor
 from concurrent.futures import ThreadPoolExecutor
@@ -326,7 +327,7 @@ def main() -> None:
     if (effective_start_fy, effective_start_quarter) > (effective_end_fy, effective_end_quarter):
         print(
             f"Already up to date through FY{effective_end_fy} Q{effective_end_quarter}. Nothing to download.")
-        return
+        sys.exit(2)
 
     if effective_start_quarter < 1 or effective_start_quarter > 4:
         raise ValueError("start quarter must be between 1 and 4")
@@ -374,11 +375,12 @@ def main() -> None:
             if future.result():
                 available_jobs.append(job)
             else:
-                print(f"[skip] FY{fy} Q{quarter} not yet published on DOL ({quarter_url})")
+                print(
+                    f"[skip] FY{fy} Q{quarter} not yet published on DOL ({quarter_url})")
 
     if not available_jobs:
         print("No new DOL quarterly files are available yet. Already up to date.")
-        return
+        sys.exit(2)
 
     quarter_jobs = available_jobs
 

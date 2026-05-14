@@ -22,7 +22,14 @@ echo "[infra:up] installing python deps (openpyxl, pyarrow)..."
 python3 -m pip install --user openpyxl pyarrow
 
 echo "[infra:up] fetching official datasets..."
-npm run fetch:official-data
+if ! npm run fetch:official-data; then
+  exit_code=$?
+  if [[ $exit_code -eq 2 ]]; then
+    echo "[infra:up] No new quarters available. Pipeline is already up to date — skipping parquet build and upload."
+    exit 0
+  fi
+  exit $exit_code
+fi
 
 echo "[infra:up] building parquet datasets..."
 npm run build:parquet
