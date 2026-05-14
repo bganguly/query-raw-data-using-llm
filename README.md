@@ -30,26 +30,17 @@ python3 -m pip install --user openpyxl pyarrow
 Run guidance:
 
 > [!IMPORTANT]
-> - If this is your first time working on this repo, use the usual 3-args flow (`bucket-name`, `aws-region`, `version-tag`).
-> - **Incremental fetching is automatic.** `data/manifest.json` tracks the last processed fiscal quarter. On every run, the fetch script reads the manifest and only downloads quarters that are newer than the last recorded one — no manual range args needed.
+> - **First time:** Run the full 3-args flow below. This downloads all quarters from FY2020, builds parquet, creates the S3 bucket, and uploads. The manifest is written automatically at the end — commit it.
+> - **Incremental (2nd+ run, new quarters only):** Just run `npm run infra:up` again with the same args. The fetch script reads `data/manifest.json` and only downloads quarters newer than the last recorded one — no manual range args needed.
+> - **Full rebuild from scratch (2nd+ run):** Reset the manifest, delete existing outputs, then run infra:up:
+>   ```bash
+>   echo '{"start_fy":2020,"start_quarter":1,"last_fy":2019,"last_quarter":4,"updated_at":"'$(date +%Y-%m-%d)'"}' > data/manifest.json
+>   rm -f data/dol_lca_h1b_combined.csv && rm -rf data/parquet/
+>   npm run infra:up -- [bucket-name] [aws-region] [version-tag]
+>   ```
+>   Commit the updated manifest after the run.
 
-To rebuild everything from scratch (re-download all quarters, regenerate all parquet):
-
-```bash
-# 1. Reset the manifest to before FY2020 Q1 so the fetch script re-downloads all quarters
-echo '{"start_fy":2020,"start_quarter":1,"last_fy":2019,"last_quarter":4,"updated_at":"'$(date +%Y-%m-%d)'"}' > data/manifest.json
-
-# 2. Delete any existing combined CSV and parquet outputs
-rm -f data/dol_lca_h1b_combined.csv
-rm -rf data/parquet/
-
-# 3. Run the full pipeline
-npm run infra:up -- [bucket-name] [aws-region] [version-tag]
-```
-
-> **Note:** After the run completes, `data/manifest.json` will be updated automatically to the latest quarter. Commit it to git to preserve the new state.
-
-Default goal (recommended): build and upload parquet to S3 in one flow:
+Build and upload parquet to S3:
 
 ```bash
 npm run infra:up -- [bucket-name] [aws-region] [version-tag]
@@ -64,20 +55,7 @@ npm run infra:up -- h1b-lca-parquet-prod us-east-1 full_multi_fiscal_noempty_cou
 - If `bucket-name` is omitted, a unique bucket is created automatically.
 - If `version-tag` is provided, cache-busted URLs are also printed.
 
-Local-only pipeline (no S3 upload):
-
-```bash
-npm run pipeline:run
-```
-
-This local-only command executes:
-
-1. `npm run fetch:official-data`
-2. `npm run build:parquet`
-
-Typical end-to-end runtime is about 20-25 minutes (depending on network and machine).
-
-After fetch/normalize completes, temporary local quarter XLSX and intermediate normalized CSV files are removed automatically.
+Typical end-to-end runtime is about 20-25 minutes (depending on network and machine). Temporary XLSX and intermediate CSV files are removed automatically after each run.
 
 ## Commands
 
