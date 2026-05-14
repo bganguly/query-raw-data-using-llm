@@ -13,12 +13,6 @@ Pipeline-only repository that downloads official H-1B LCA disclosures, normalize
 
 ![Pipeline flow](docs/images/pipeline-flow.png)
 
-## Data Previews
-
-Sample rows at each pipeline stage (regenerate with `npm run generate:previews`).
-
-![Pipeline data preview](docs/images/preview-pipeline-stages.png)
-
 ## Prerequisites
 
 - Python 3.10+
